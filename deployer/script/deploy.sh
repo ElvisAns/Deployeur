@@ -131,16 +131,13 @@ fi
 
 # Function to check if yq is installed, install if not
 check_yq() {
-  if ! command -v yq &> /dev/null; then
+  if ! command -v $DEPLOYER_FOLDER/yq &> /dev/null; then
     echo "yq not found, installing locally..."
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-      # For Linux, install yq locally in the current directory
-      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_linux_amd64 -o ./yq
-      chmod +x ./yq
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then/v4.16.1/yq_linux_amd64 -o $DEPLOYER_FOLDER/yq
+      chmod +x $DEPLOYER_FOLDER/yq
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-      # For macOS, install yq locally in the current directory
-      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_darwin_amd64 -o ./yq
-      chmod +x ./yq
+      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_darwin_amd64 -o $DEPLOYER_FOLDER/yq
+      chmod +x $DEPLOYER_FOLDER/yq
     else
       echo "Unsupported OS. Please install yq manually."
       exit 1
@@ -154,7 +151,7 @@ check_yq
 # Execute deploy commands from the YAML file
 if [ -f "$DEPLOY_YML" ]; then
   # Use the locally installed yq to parse the YAML file, with double-quoted commands properly escaped
-  deploy_commands=$(./yq e '.deploy[]' "$DEPLOY_YML" | sed 's/\\"/"/g')  # Ensure quotes are properly handled
+  deploy_commands=$($DEPLOYER_FOLDER/yq e '.deploy[]' "$DEPLOY_YML" | sed 's/\\"/"/g')  # Ensure quotes are properly handled
   for cmd in "$deploy_commands"; do
     echo "Executing command: $cmd"
     eval "$cmd"
