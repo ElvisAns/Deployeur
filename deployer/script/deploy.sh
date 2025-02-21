@@ -108,11 +108,35 @@ else
   echo "Initial deployment already completed (deployment.initiated found)."
 fi
 
+#!/bin/bash
+
+# Function to check if yq is installed, install if not
+check_yq() {
+  if ! command -v yq &> /dev/null; then
+    echo "yq not found, installing locally..."
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+      # For Linux, install yq locally in the current directory
+      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_linux_amd64 -o ./yq
+      chmod +x ./yq
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+      # For macOS, install yq locally in the current directory
+      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_darwin_amd64 -o ./yq
+      chmod +x ./yq
+    else
+      echo "Unsupported OS. Please install yq manually."
+      exit 1
+    fi
+  fi
+}
+
+# Check if yq is installed, or install it locally
+check_yq
+
 # Execute deploy commands from the YAML file
 if [ -f "$DEPLOY_YML" ]; then
-  # Extract commands (lines starting with "- ") under the deploy section
-  deploy_commands=$(grep '^- ' "$DEPLOY_YML" | sed 's/^- //')
-  for cmd in $deploy_commands; do
+  # Use the locally installed yq to parse the YAML file, with double-quoted commands properly escaped
+  deploy_commands=$(./yq e '.deploy[]' "$DEPLOY_YML" | sed 's/\\"/"/g')  # Ensure quotes are properly handled
+  for cmd in "$deploy_commands"; do
     echo "Executing command: $cmd"
     eval "$cmd"
     if [ $? -ne 0 ]; then
@@ -126,6 +150,7 @@ else
   rm "$LOCK_FILE"
   exit 1
 fi
+
 
 # Remove the lock file now that deployment is complete
 rm "$LOCK_FILE"

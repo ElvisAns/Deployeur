@@ -1,2 +1,3 @@
-deploy_commands:
+deploy:
+  - echo "pulling latest changes"
   - git pull
