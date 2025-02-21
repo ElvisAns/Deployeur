@@ -29,7 +29,7 @@ $dotenv->load();
 
 function env($key, $default = null)
 {
-    $value = getenv($key);
+    $value = $_ENV[$key];
     return $value === false ? $default : $value;
 }
 
@@ -51,7 +51,7 @@ $deployToken = $allheaders['x-deploy-token'] ?? '';
 $expectedToken = $_ENV['DEPLOY_TOKEN']; // Get deploy token from .env
 
 if (empty($deployToken)) {
-    sleep(rand(3, 10)); // Random delay to waste their time
+    //sleep(rand(3, 10)); // Random delay to waste their time
     echo 'Successfully deployed :-)';
     $msg = date('Y-m-d H:i:s') . " - Bot detected due to missing deploy token from {$_SERVER['REMOTE_ADDR']}\n";
     file_put_contents($logFile, $msg, FILE_APPEND);
