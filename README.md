@@ -17,6 +17,7 @@ Deployeur operates from a subdomain that points to the script's root folder, all
 ├── vendor/                  # Dependencies
 .env.example                 # Example environment variables file
 index.php                    # Web-triggered deployment script
+setup.sh                     # Interactive setup script
 ```
 
 ## Minimum Requirements
@@ -29,44 +30,49 @@ Deployeur is lightweight and can run on almost any shared hosting with the follo
 
 ## Setup & Configuration
 
-### 1. Create a Subdomain and Clone the Repository
+### 1. Create a Subdomain and Download Deployeur
 - Set up a subdomain (e.g., `deploy.yourdomain.com`) in your hosting control panel.
-- Clone this repository into the subdomain’s root folder:
+- Download the latest stable release using `wget`:
 ```sh
-git clone https://github.com/ElvisAns/Deployeur.git /home/demo/awesome-deployer
+wget https://github.com/ElvisAns/Deployeur/releases/latest/download/deployeur.tar.gz
+```
+- Extract the archive:
+```sh
+tar -xvzf deployeur.tar.gz -C /home/demo/awesome-deployer
 cd /home/demo/awesome-deployer
 ```
 
-### 2. Install Dependencies
-Ensure you have the required dependencies:
+### 2. Run the Interactive Setup Script
+Deployeur now includes an interactive setup script that configures the environment variables for you. Simply run:
 ```sh
-composer install  # For PHP dependencies
+bash setup.sh
 ```
+This script will prompt you to enter:
+- `DEPLOY_TOKEN`
+- `PROJECT_FOLDER`
+- `REPO_URL`
+- `DEPLOYER_FOLDER`
+- `TMP_FOLDER`
+- `LOG_FILE`
+- `DEPLOY_YML`
+- `GIT_USERNAME`
+- `GIT_EMAIL`
 
-### 3. Configure Environment Variables
-Copy `.env.example` to `.env` and update the values inside:
-```sh
-cp .env.example .env
-```
-Edit `.env` with your configuration:
-```
-DEPLOY_TOKEN=xxxxxxxxx
-PROJECT_FOLDER="/home/demo/public_html"
-REPO_URL="https://github_pat_xxxxxxxxxxx@github.com//username/repo.git"
-DEPLOYER_FOLDER="/home/demo/awesome-deployer/deployer"
-TMP_FOLDER="/home/demo/awesome-deployer/deployer/tmp"
-LOG_FILE="/home/demo/awesome-deployer/deployer/script/log.txt"
-DEPLOY_YML="/home/demo/awesome-deployer/deployer/script/deploy.yml"
-GIT_USERNAME="johndoe"
-GIT_EMAIL="johndoe@gmail.com"
-```
+If a `.env` file already exists, the script will warn you and ask for confirmation before backing it up as `.env.backup`.
 
-### 4. Set Permissions
+### 3. Set Permissions
 Ensure the script has execution permission:
 ```sh
 chmod +x /home/demo/awesome-deployer/deployer/script/deploy.sh
 ```
 The web server user must also have permission to execute the script and modify files in `PROJECT_FOLDER`.
+
+### Alternative Installation via SSH
+If you do not have access to cPanel’s terminal, you can install Deployeur via SSH. Simply connect to your server using:
+```sh
+ssh your-user@yourdomain.com
+```
+Then follow the same installation steps as above.
 
 ## Deployment Process
 1. The script checks for `.deployer.lock` to prevent multiple deployments from running simultaneously.
