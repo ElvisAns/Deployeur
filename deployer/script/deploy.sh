@@ -18,6 +18,8 @@
 # - DEPLOYER_FOLDER: Full path to the deployer scripts
 # - REPO_URL: Git repository URL to clone
 # - LOG_FILE: Path to the log file
+# - GIT_USERNAME : The username to use as commit author name
+# - GIT_EMAIL : The email to use as commit author email
 #
 # Usage:
 # - Ensure this script is executable: chmod +x deploy.sh
@@ -88,6 +90,13 @@ if [ ! -f "$INITIATED_FLAG" ]; then
 
   # Check if there are any changes after merging
   if [ -n "$(git status --porcelain)" ]; then
+    # Check if git config is set, if not set it using env variables
+    if [ -z "$(git config user.name)" ]; then
+      git config user.name "$GIT_USERNAME"
+    fi
+    if [ -z "$(git config user.email)" ]; then
+      git config user.email "$GIT_EMAIL" 
+    fi
     git add .
     git commit -m "Initial merge: auto commit changes from previous deployment" || echo "Nothing to commit"
     echo "$(date): Changes detected and auto-committed during initial merge." >> "$LOG_FILE"

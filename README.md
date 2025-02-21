@@ -57,6 +57,8 @@ DEPLOYER_FOLDER="/home/demo/awesome-deployer/deployer"
 TMP_FOLDER="/home/demo/awesome-deployer/deployer/tmp"
 LOG_FILE="/home/demo/awesome-deployer/deployer/script/log.txt"
 DEPLOY_YML="/home/demo/awesome-deployer/deployer/script/deploy.yml"
+GIT_USERNAME="johndoe"
+GIT_EMAIL="johndoe@gmail.com"
 ```
 
 ### 4. Set Permissions
