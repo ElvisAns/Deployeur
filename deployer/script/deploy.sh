@@ -72,7 +72,7 @@ if [ ! -f "$INITIATED_FLAG" ]; then
   # Move all items except 'deployer', 'vendor', and 'node_modules' to TMP_FOLDER
   shopt -s extglob
   for item in *; do
-    if [[ "$item" != "deployer" && "$item" != "vendor" && "$item" != "node_modules" ]]; then
+    if [[ "$item" != "vendor" && "$item" != "node_modules" ]]; then
       mv -v "$item" "$TMP_FOLDER"/ 2>/dev/null || true
     fi
   done
