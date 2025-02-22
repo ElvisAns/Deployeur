@@ -83,9 +83,9 @@ describe(
             }
         );
 
-        $expectedDirs = ["node_modules", "public", "src", "dist", ".git"]; //deploy.test.yml runs npm install
+        //not listing hidden files & dirs
+        $expectedDirs = ["node_modules", "public", "src", "dist"]; //deploy.test.yml runs npm install
         $expectedFiles = [
-            ".gitignore",
             "eslint.config.js",
             "index.html",
             "package-lock.json",
@@ -95,7 +95,7 @@ describe(
             "tsconfig.json",
             "tsconfig.node.json",
             "vite.config.ts",
-            ".deployed.initialized"
+            "deployment.initiated"
         ];
 
         $current_folder_content = getFilesAndDirs($tmp_app_full_path);
@@ -103,16 +103,16 @@ describe(
         test(
             'temp app folder content must have expected folders after initial deployment',
             function () use ($current_folder_content, $expectedDirs) {
-                expect(array_diff($current_folder_content['dirs'], $expectedDirs))->toBeEmpty();
-                expect(array_diff($expectedDirs, $current_folder_content['dirs']))->toBeEmpty();
+                expect(array_diff($current_folder_content['dirs'], $expectedDirs))->toBe([]);
+                expect(array_diff($expectedDirs, $current_folder_content['dirs']))->toBe([]);
             }
         );
 
         test(
             'temp app folder content must have expected files after initial deployment',
             function () use ($current_folder_content, $expectedFiles) {
-                expect(array_diff($current_folder_content["files"], $expectedFiles))->toBeEmpty();
-                expect(array_diff($expectedFiles, $current_folder_content["files"]))->toBeEmpty();
+                expect(array_diff($current_folder_content["files"], $expectedFiles))->toBe([]);
+                expect(array_diff($expectedFiles, $current_folder_content["files"]))->toBe([]);
             }
         );
 
@@ -120,7 +120,6 @@ describe(
         unlink("$ROOTDIR/tests/Feature/deploy-log.test.txt");
     }
 );
-
 
 describe(
     'Deploy script can deploy inside a non empty directory and merge tracked file changes',
