@@ -1,0 +1,6 @@
+deploy:
+  - echo "pulling latest changes"
+  - git pull
+  - npm ci --include=dev
+  - npm run build
+  - echo "done"
