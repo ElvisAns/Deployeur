@@ -35,16 +35,11 @@ Deployeur is lightweight and can run on almost any shared hosting with the follo
 
 ### 1. Create a Subdomain and Download Deployeur
 - Set up a subdomain (e.g., `deploy.yourdomain.com`) in your hosting control panel.
-- Download the latest stable release using `wget`:
+- Download the latest stable release inside the subdomain root:
 ```sh
-wget https://github.com/ElvisAns/Deployeur/releases/latest/download/deployeur.tar.gz
-```
-- Extract the archive:
-```sh
-tar -xvzf deployeur.tar.gz -C /home/demo/awesome-deployer
 cd /home/demo/awesome-deployer
+tar -xzf <(curl -sL $(curl -s https://api.github.com/repos/ElvisAns/Deployeur/releases/latest | grep tarball_url | cut -d '"' -f 4)) --strip-components=1
 ```
-
 ### 2. Run the Interactive Setup Script
 Deployeur now includes an interactive setup script that configures the environment variables for you. Simply run:
 ```sh
