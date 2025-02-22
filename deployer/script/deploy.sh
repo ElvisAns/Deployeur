@@ -1,13 +1,9 @@
 #!/bin/bash
 #
-# Deployment Script
+# Deployment Script with Rollback Mechanism
 #
-# This script automates the deployment process by:
-# - Checking for a lock file to prevent multiple deployments
-# - Moving existing files (except specific folders) to a temporary location
-# - Cloning the repository from the configured .env file
-# - Restoring previous files and committing changes if any
-# - Executing deployment commands from a YAML configuration file
+# This script automates the deployment process and includes a rollback mechanism
+# to revert the server to its previous state in case of failure.
 #
 # Author: Ansima
 # Created: 02/17/2025
@@ -59,6 +55,31 @@ fi
 # Create the lock file to prevent concurrent deployments
 touch "$LOCK_FILE"
 
+# Function to rollback the server to its previous state
+rollback() {
+  echo "Rolling back the server to its previous state..."
+  
+  # Remove the newly cloned repository
+  if [ -d "$PROJECT_FOLDER/.git" ]; then
+    rm -rf "$PROJECT_FOLDER/.git"
+    rm -rf "$PROJECT_FOLDER"/*
+  fi
+
+  # Move back the previously moved files from TMP_FOLDER to PROJECT_FOLDER
+  if [ -d "$TMP_FOLDER" ]; then
+    mv -v "$TMP_FOLDER"/* "$PROJECT_FOLDER"/ 2>/dev/null || true
+  fi
+
+  # Remove the lock file
+  rm -f "$LOCK_FILE"
+
+  echo "Rollback completed."
+  exit 1
+}
+
+# Trap any errors and call the rollback function
+trap rollback ERR
+
 # Run initial merge steps only if deployment hasn't been initiated yet
 if [ ! -f "$INITIATED_FLAG" ]; then
   echo "Initial deployment steps: deployment.initiated not found."
@@ -108,20 +129,15 @@ else
   echo "Initial deployment already completed (deployment.initiated found)."
 fi
 
-#!/bin/bash
-
 # Function to check if yq is installed, install if not
 check_yq() {
-  if ! command -v yq &> /dev/null; then
+  if ! command -v $DEPLOYER_FOLDER/yq &> /dev/null; then
     echo "yq not found, installing locally..."
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-      # For Linux, install yq locally in the current directory
-      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_linux_amd64 -o ./yq
-      chmod +x ./yq
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then/v4.16.1/yq_linux_amd64 -o $DEPLOYER_FOLDER/yq
+      chmod +x $DEPLOYER_FOLDER/yq
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-      # For macOS, install yq locally in the current directory
-      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_darwin_amd64 -o ./yq
-      chmod +x ./yq
+      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_darwin_amd64 -o $DEPLOYER_FOLDER/yq
+      chmod +x $DEPLOYER_FOLDER/yq
     else
       echo "Unsupported OS. Please install yq manually."
       exit 1
@@ -135,22 +151,19 @@ check_yq
 # Execute deploy commands from the YAML file
 if [ -f "$DEPLOY_YML" ]; then
   # Use the locally installed yq to parse the YAML file, with double-quoted commands properly escaped
-  deploy_commands=$(./yq e '.deploy[]' "$DEPLOY_YML" | sed 's/\\"/"/g')  # Ensure quotes are properly handled
+  deploy_commands=$($DEPLOYER_FOLDER/yq e '.deploy[]' "$DEPLOY_YML" | sed 's/\\"/"/g')  # Ensure quotes are properly handled
   for cmd in "$deploy_commands"; do
     echo "Executing command: $cmd"
     eval "$cmd"
     if [ $? -ne 0 ]; then
       echo "Error: Command failed -> $cmd"
-      rm "$LOCK_FILE"
-      exit 1
+      rollback
     fi
   done
 else
   echo "Error: Deployment YAML file not found at $DEPLOY_YML"
-  rm "$LOCK_FILE"
-  exit 1
+  rollback
 fi
-
 
 # Remove the lock file now that deployment is complete
 rm "$LOCK_FILE"
