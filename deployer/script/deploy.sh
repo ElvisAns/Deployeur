@@ -160,28 +160,23 @@ check_yq() {
 # Check if yq is installed, or install it locally
 check_yq
 
-# Execute deploy commands from the YAML file
 if [ -f "$DEPLOY_YML" ]; then
-  # Use yq to safely parse commands into an array (even with spaces/quotes)
-  mapfile -t deploy_commands < <(
-    "$DEPLOYER_FOLDER"/yq e '.deploy[] | sub("\\n", "")' "$DEPLOY_YML"  # Handle multiline strings
-  )
-
-  # Check if commands were parsed successfully
-  if [ ${#deploy_commands[@]} -eq 0 ]; then
-    rollback "No commands found in $DEPLOY_YML"
+  # Combine all deploy commands into one command chain with '&&'
+  deploy_commands=$(yq e '.deploy[]' "$DEPLOY_YML" | paste -sd " && " -)
+  
+  echo -e "\n▶ Executing combined deploy commands:"
+  echo "$deploy_commands"
+  
+  # Execute in one subshell so that environment changes persist
+  if ! bash -c "$deploy_commands"; then
+    rollback "❌ Deployment commands failed"
   fi
-
-  for cmd in "${deploy_commands[@]}"; do
-    echo -e "\n▶ Executing command: $cmd"
-    if ! eval "$cmd"; then
-      rollback "❌ Command failed -> $cmd"
-    fi
-  done
+  
   echo -e "\n✅ All commands executed successfully"
 else
   rollback "Deployment YAML file not found at $DEPLOY_YML"
 fi
+
 
 # Remove the lock file now that deployment is complete
 rm "$LOCK_FILE"
