@@ -63,8 +63,13 @@ touch "$LOCK_FILE"
 
 # Function to rollback the server to its previous state
 rollback() {
+  local error=$1
   echo "Rolling back the server to its previous state..."
   
+  if [ -n "$error" ]; then
+    echo "Rollback triggered by error: $error"
+  fi
+
   # Remove the newly cloned repository
   if [ -d "$PROJECT_FOLDER/.git" ]; then
     rm -rf "$PROJECT_FOLDER/.git"
@@ -83,9 +88,8 @@ rollback() {
   exit 1
 }
 
-# Trap any errors and call the rollback function
-trap rollback ERR
-
+# Trap any errors and call the rollback function with error info
+trap 'rollback "${BASH_COMMAND}" "${?}"' ERR
 # Run initial merge steps only if deployment hasn't been initiated yet
 if [ ! -f "$INITIATED_FLAG" ]; then
   echo "Initial deployment steps: deployment.initiated not found."
@@ -158,18 +162,31 @@ check_yq
 
 # Execute deploy commands from the YAML file
 if [ -f "$DEPLOY_YML" ]; then
-  # Use the locally installed yq to parse the YAML file, with double-quoted commands properly escaped
-  deploy_commands=$("$DEPLOYER_FOLDER"/yq e '.deploy[]' "$DEPLOY_YML" | sed 's/\\"/"/g')  # Ensure quotes are properly handled
-  for cmd in $deploy_commands; do
-    echo "Executing command: $cmd"
+  # Use yq to safely parse commands into an array (even with spaces/quotes)
+  mapfile -t deploy_commands < <(
+    "$DEPLOYER_FOLDER"/yq e '.deploy[] | sub("\\n", "")' "$DEPLOY_YML"  # Handle multiline strings
+  )
+
+  # Check if commands were parsed successfully
+  if [ ${#deploy_commands[@]} -eq 0 ]; then
+    echo "Error: No commands found in $DEPLOY_YML"
+    rollback
+    exit 1
+  fi
+
+  for cmd in "${deploy_commands[@]}"; do
+    echo -e "\n▶ Executing command: $cmd"
     if ! eval "$cmd"; then
-      echo "Error: Command failed -> $cmd"
+      echo -e "❌ Error: Command failed -> $cmd"
       rollback
+      exit 1
     fi
   done
+  echo -e "\n✅ All commands executed successfully"
 else
   echo "Error: Deployment YAML file not found at $DEPLOY_YML"
   rollback
+  exit 1
 fi
 
 # Remove the lock file now that deployment is complete
