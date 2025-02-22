@@ -1,5 +1,7 @@
 # Deployeur: The Indie Hacker's CI/CD Solution
 
+![CI](https://github.com/ElvisAns/Deployeur/actions/workflows/test.yaml/badge.svg)
+
 ## Overview
 Deployeur is a lightweight yet powerful deployment tool designed specifically for indie hackers who struggle to set up CI/CD on shared hosting environments. It simplifies the deployment process by automating updates, executing necessary build steps, and maintaining a streamlined workflow—all from a dedicated subdomain.
 
