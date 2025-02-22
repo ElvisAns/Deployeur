@@ -1,4 +1,5 @@
 # Deployeur: The Indie Hacker's CI/CD Solution
+![image](https://github.com/user-attachments/assets/178d6cdc-e443-4636-afb9-9edf57686fe2)
 
 ![CI](https://github.com/ElvisAns/Deployeur/actions/workflows/test.yaml/badge.svg)
 
