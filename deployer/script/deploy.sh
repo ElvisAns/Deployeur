@@ -159,6 +159,7 @@ check_yq() {
 
 # Check if yq is installed, or install it locally
 check_yq
+
 # Execute deploy commands from the YAML file
 if [ -f "$DEPLOY_YML" ]; then
   # Use yq to safely parse commands into an array (even with spaces/quotes)
@@ -173,16 +174,17 @@ if [ -f "$DEPLOY_YML" ]; then
 
   # Create a temporary script to execute all commands in the same shell
   TEMP_SCRIPT=$(mktemp)
-  echo "#!/bin/bash" > "$TEMP_SCRIPT"
-  echo "set -e" >> "$TEMP_SCRIPT"  # Exit on error
+  printf "#!/bin/bash\n" > "$TEMP_SCRIPT"
+  printf "set -e\n" >> "$TEMP_SCRIPT"  # Exit on error
   for cmd in "${deploy_commands[@]}"; do
-    echo "echo '▶ Executing command: $cmd'" >> "$TEMP_SCRIPT"
-    echo "$cmd" >> "$TEMP_SCRIPT"
+    printf "echo '▶ Executing command: %s'\n" "$cmd" >> "$TEMP_SCRIPT"
+    printf "%s\n" "$cmd" >> "$TEMP_SCRIPT"
   done
-  echo "echo -e '\n✅ All commands executed successfully'" >> "$TEMP_SCRIPT"
+  printf "printf '\\n✅ All commands executed successfully\\n'\n" >> "$TEMP_SCRIPT"
 
   # Execute the temporary script in the current shell
   chmod +x "$TEMP_SCRIPT"
+  # shellcheck disable=SC1090
   if ! source "$TEMP_SCRIPT"; then
     rollback "❌ Deployment failed"
   fi
@@ -192,6 +194,7 @@ if [ -f "$DEPLOY_YML" ]; then
 else
   rollback "Deployment YAML file not found at $DEPLOY_YML"
 fi
+
 # Remove the lock file now that deployment is complete
 rm "$LOCK_FILE"
 
