@@ -27,17 +27,23 @@
 # - Deployment commands are read from a YAML file to allow flexibility.
 #
 
-# Exit immediately if any command fails
-set -e
+
+set -euo pipefail
 
 # Load environment variables from .env file
 ENV_FILE="$(dirname "$0")/../../.env"
-if [ -f "$ENV_FILE" ]; then
+if [ -f "$ENV_FILE" ] && [ -r "$ENV_FILE" ]; then
+  # shellcheck disable=SC1090
   source "$ENV_FILE"
 else
-  echo "Error: .env file not found at $ENV_FILE"
+  echo "Error: .env file not found or not readable at $ENV_FILE"
   exit 1
 fi
+
+# Validate critical variables
+: "${PROJECT_FOLDER:?Error: PROJECT_FOLDER is not set}"
+: "${DEPLOYER_FOLDER:?Error: DEPLOYER_FOLDER is not set}"
+: "${TMP_FOLDER:?Error: TMP_FOLDER is not set}"
 
 # Change directory to the project folder
 cd "$PROJECT_FOLDER" || { echo "Error: Cannot change directory to $PROJECT_FOLDER"; exit 1; }
@@ -62,7 +68,7 @@ rollback() {
   # Remove the newly cloned repository
   if [ -d "$PROJECT_FOLDER/.git" ]; then
     rm -rf "$PROJECT_FOLDER/.git"
-    rm -rf "$PROJECT_FOLDER"/*
+    rm -rf "${PROJECT_FOLDER:?}"/*
   fi
 
   # Move back the previously moved files from TMP_FOLDER to PROJECT_FOLDER
@@ -120,6 +126,7 @@ if [ ! -f "$INITIATED_FLAG" ]; then
     fi
     git add .
     git commit -m "Initial merge: auto commit changes from previous deployment" || echo "Nothing to commit"
+      # shellcheck disable=SC2153
     echo "$(date): Changes detected and auto-committed during initial merge." >> "$LOG_FILE"
   fi
 
@@ -131,13 +138,14 @@ fi
 
 # Function to check if yq is installed, install if not
 check_yq() {
-  if ! command -v $DEPLOYER_FOLDER/yq &> /dev/null; then
+  if ! command -v "$DEPLOYER_FOLDER/yq" &> /dev/null; then
     echo "yq not found, installing locally..."
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then/v4.16.1/yq_linux_amd64 -o $DEPLOYER_FOLDER/yq
-      chmod +x $DEPLOYER_FOLDER/yq
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_linux_amd64 -o "$DEPLOYER_FOLDER/yq"
+      chmod +x "$DEPLOYER_FOLDER/yq"
     elif [[ "$OSTYPE" == "darwin"* ]]; then
-      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_darwin_amd64 -o $DEPLOYER_FOLDER/yq
-      chmod +x $DEPLOYER_FOLDER/yq
+      curl -sSL https://github.com/mikefarah/yq/releases/download/v4.16.1/yq_darwin_amd64 -o "$DEPLOYER_FOLDER/yq"
+      chmod +x "$DEPLOYER_FOLDER/yq"
     else
       echo "Unsupported OS. Please install yq manually."
       exit 1
@@ -151,11 +159,10 @@ check_yq
 # Execute deploy commands from the YAML file
 if [ -f "$DEPLOY_YML" ]; then
   # Use the locally installed yq to parse the YAML file, with double-quoted commands properly escaped
-  deploy_commands=$($DEPLOYER_FOLDER/yq e '.deploy[]' "$DEPLOY_YML" | sed 's/\\"/"/g')  # Ensure quotes are properly handled
-  for cmd in "$deploy_commands"; do
+  deploy_commands=$("$DEPLOYER_FOLDER"/yq e '.deploy[]' "$DEPLOY_YML" | sed 's/\\"/"/g')  # Ensure quotes are properly handled
+  for cmd in $deploy_commands; do
     echo "Executing command: $cmd"
-    eval "$cmd"
-    if [ $? -ne 0 ]; then
+    if ! eval "$cmd"; then
       echo "Error: Command failed -> $cmd"
       rollback
     fi
