@@ -5,3 +5,4 @@ deployer/script/log.txt
 yq
 backup
 .env.backup
+tmp-application-*/
