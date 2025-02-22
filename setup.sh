@@ -29,6 +29,20 @@ if [ -f ".env" ]; then
     fi
 fi
 
+# Check if composer is installed
+if ! command -v composer &> /dev/null; then
+    echo -e "${RED}Composer is not installed. Please install Composer and run the setup again.${NC}"
+    exit 1
+fi
+
+# Run composer install
+echo -e "${BLUE}Running composer install...${NC}"
+composer install
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Composer install failed. Please check the errors above.${NC}"
+    exit 1
+fi
 # Ask for user input with default values
 echo -e "${BLUE}Please enter the following configuration values:${NC}"
 
