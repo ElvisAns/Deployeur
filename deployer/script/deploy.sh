@@ -159,25 +159,39 @@ check_yq() {
 
 # Check if yq is installed, or install it locally
 check_yq
-
+# Execute deploy commands from the YAML file
 if [ -f "$DEPLOY_YML" ]; then
-  # Combine all deploy commands into one command chain with '&&'
-  deploy_commands=$(yq e '.deploy[]' "$DEPLOY_YML" | paste -sd " && " -)
-  
-  echo -e "\n▶ Executing combined deploy commands:"
-  echo "$deploy_commands"
-  
-  # Execute in one subshell so that environment changes persist
-  if ! bash -c "$deploy_commands"; then
-    rollback "❌ Deployment commands failed"
+  # Use yq to safely parse commands into an array (even with spaces/quotes)
+  mapfile -t deploy_commands < <(
+    "$DEPLOYER_FOLDER"/yq e '.deploy[] | sub("\\n", "")' "$DEPLOY_YML"  # Handle multiline strings
+  )
+
+  # Check if commands were parsed successfully
+  if [ ${#deploy_commands[@]} -eq 0 ]; then
+    rollback "No commands found in $DEPLOY_YML"
   fi
-  
-  echo -e "\n✅ All commands executed successfully"
+
+  # Create a temporary script to execute all commands in the same shell
+  TEMP_SCRIPT=$(mktemp)
+  echo "#!/bin/bash" > "$TEMP_SCRIPT"
+  echo "set -e" >> "$TEMP_SCRIPT"  # Exit on error
+  for cmd in "${deploy_commands[@]}"; do
+    echo "echo '▶ Executing command: $cmd'" >> "$TEMP_SCRIPT"
+    echo "$cmd" >> "$TEMP_SCRIPT"
+  done
+  echo "echo -e '\n✅ All commands executed successfully'" >> "$TEMP_SCRIPT"
+
+  # Execute the temporary script in the current shell
+  chmod +x "$TEMP_SCRIPT"
+  if ! source "$TEMP_SCRIPT"; then
+    rollback "❌ Deployment failed"
+  fi
+
+  # Clean up the temporary script
+  rm -f "$TEMP_SCRIPT"
 else
   rollback "Deployment YAML file not found at $DEPLOY_YML"
 fi
-
-
 # Remove the lock file now that deployment is complete
 rm "$LOCK_FILE"
 
