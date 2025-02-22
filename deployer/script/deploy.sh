@@ -169,24 +169,18 @@ if [ -f "$DEPLOY_YML" ]; then
 
   # Check if commands were parsed successfully
   if [ ${#deploy_commands[@]} -eq 0 ]; then
-    echo "Error: No commands found in $DEPLOY_YML"
-    rollback
-    exit 1
+    rollback "No commands found in $DEPLOY_YML"
   fi
 
   for cmd in "${deploy_commands[@]}"; do
     echo -e "\n▶ Executing command: $cmd"
     if ! eval "$cmd"; then
-      echo -e "❌ Error: Command failed -> $cmd"
-      rollback
-      exit 1
+      rollback "❌ Command failed -> $cmd"
     fi
   done
   echo -e "\n✅ All commands executed successfully"
 else
-  echo "Error: Deployment YAML file not found at $DEPLOY_YML"
-  rollback
-  exit 1
+  rollback "Deployment YAML file not found at $DEPLOY_YML"
 fi
 
 # Remove the lock file now that deployment is complete
