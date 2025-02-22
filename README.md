@@ -25,7 +25,7 @@ setup.sh                     # Interactive setup script
 
 ## Minimum Requirements
 Deployeur is lightweight and can run on almost any shared hosting with the following minimum requirements:
-- PHP 7.4 or later
+- PHP 8.2 or later
 - SSH access (optional but recommended)
 - `exec()` function enabled in PHP
 - Git installed on the server
