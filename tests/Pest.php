@@ -24,9 +24,12 @@
 |
 */
 
-expect()->extend('toBeOne', function () {
-    return $this->toBe(1);
-});
+expect()->extend(
+    'toBeOne',
+    function () {
+        return $this->toBe(1);
+    }
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -40,11 +43,14 @@ expect()->extend('toBeOne', function () {
 */
 
 
-define('ENVFILE', __DIR__.'/../.env');
-define('ENVBACKUP', __DIR__.'/../.env.test.backup');
+define('ENVFILE', __DIR__ . '/../.env');
+define('ENVBACKUP', __DIR__ . '/../.env.test.backup');
 
 function backupEnv()
 {
+    if (!file_exists(ENVFILE)) {
+        file_put_contents(ENVFILE, '');
+    }
     copy(ENVFILE, ENVBACKUP);
 }
 
