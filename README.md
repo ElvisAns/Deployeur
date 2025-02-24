@@ -74,7 +74,7 @@ Then follow the same installation steps as above.
 
 ## Deployment Process
 1. The script checks for `.deployer.lock` to prevent multiple deployments from running simultaneously.
-2. If `deployment.initiated` exists, it:
+2. If `deployment.initiated`does not exists, it:
    - Moves everything (except `deployer`, `vendor`, and `node_modules`) to `/deployer/tmp/`.
    - Deletes `vendor` and `node_modules`.
    - Clones the repository into `PROJECT_FOLDER`.
